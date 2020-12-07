@@ -1,0 +1,85 @@
+---
+title: "Chi-square with lizards tails"
+author: "Jonah Seif"
+date: "12/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(broom)
+```
+
+## Read in data
+```{r}
+lizards <- read_csv(here("data", "lizards.csv"))
+```
+
+
+Get counts of lizards by species:
+```{r}
+lizards %>% 
+  count(spp) %>% 
+  arrange(-n)
+```
+
+
+
+## Wrangling to make subset
+
+- UTST lizards
+- Sites: IBPE (enclosure grassland), RABB (rabbit mesquite site), EAST (east tarbush site)
+- Tail condition is recorded (W = whole, B = broken)
+
+```{r}
+utst <- lizards %>% 
+  filter(spp == "UTST") %>%
+  filter(site %in% c("IBPE", "RABB", "EAST")) %>% 
+  filter(tail %in% c("B", "W"))
+```
+
+## Find counts & proportions, put in a table
+
+```{r}
+utst %>% 
+  count(site, tail)
+```
+
+```{r}
+tail_counts <- utst %>% 
+  janitor::tabyl(site, tail)
+
+tail_proportions <- tail_counts %>% 
+  adorn_percentages() %>% 
+  adorn_pct_formatting(digits = 2) %>% 
+  adorn_ns()
+```
+
+## Make contingency table and run chi-square
+
+First, we see that the site is its own variable - when we run chi-square, we really only want the counts in the table. 
+
+We can use `column_to_rownames` to convert entries in a column to stored rownames: 
+
+```{r}
+lizard_ct <- tail_counts %>% 
+  column_to_rownames(var = "site")
+```
+
+**Now** this is in shape to run chi-square. 
+
+What are we asking? Are site and tail breakage independent? In other words: is there a significant association between site and tail breakage? 
+
+```{r}
+lizard_x2 <- chisq.test(lizard_ct)
+lizard_x2
+
+lizard_tidy <- tidy(lizard_x2)
+```
+There is a significant association between site and lizard tail breakage ($\chi$^2^(`r lizard_tidy$parameter`) = `r round(lizard_tidy$statistic,2)`, *p* = `r round(lizard_tidy$p.value, 3)`).
+
+
+
