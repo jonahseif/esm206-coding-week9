@@ -1,0 +1,80 @@
+---
+title: "Part 1 Multiple linear regression"
+author: "Jonah Seif"
+date: "12/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(palmerpenguins)
+library(GGally)
+library(stargazer)
+```
+
+```{r}
+#Data visualization with correlation values (all variables)
+penguins %>% 
+  ggpairs(aes(col = species))
+```
+
+```{r}
+penguins %>% 
+  select(species, bill_length_mm:body_mass_g) %>% 
+  ggpairs(aes(color = species))
+```
+
+## Build a few different models (Comparing regression models)
+
+```{r}
+lm1 <- lm(body_mass_g ~ flipper_length_mm + species, data = penguins)
+
+lm2 <- lm(body_mass_g ~ flipper_length_mm + species + sex, data = penguins)
+
+lm3 <- lm(body_mass_g ~ flipper_length_mm + species + sex + bill_length_mm, data = penguins)
+
+lm4 <- lm(body_mass_g ~ flipper_length_mm + species + sex + bill_length_mm + island, data = penguins)
+```
+
+
+## Find the AIC value for each model
+
+```{r}
+AIC(lm1) # 5031.52
+AIC(lm2) # 4740.77
+AIC(lm3) # 4733.57 (lowest of these 4)
+AIC(lm4) # 4736.98 (added island, AIC goes UP)
+
+plot(lm3)
+```
+
+
+##  Use stargazer package for table with multiple model outputs
+
+```{r, results = 'asis'}
+stargazer(lm1, lm3, type = "html")
+```
+
+## Omitted variable bias
+
+```{r}
+ggplot(data = penguins, aes(x = flipper_length_mm,
+                            y = bill_depth_mm, 
+                            group = species))+
+  geom_point(aes(color = species))+
+  geom_smooth(method = "lm")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
